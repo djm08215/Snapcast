@@ -31,11 +31,11 @@ export async function POST(req: Request) {
     try {
       const transcriptData = await info.getTranscript();
       const segments: TranscriptSegment[] =
-        transcriptData?.content?.body?.initial_segments
-          ?.map((seg: { start_ms: string; end_ms: string; snippet: { text: { toString: () => string } } }) => ({
+        transcriptData?.transcript?.content?.body?.initial_segments
+          ?.map((seg: { start_ms: string; end_ms: string; snippet: { toString: () => string } }) => ({
             offset: Number(seg.start_ms),
             duration: Number(seg.end_ms) - Number(seg.start_ms),
-            text: seg.snippet.text.toString().replace(/\n/g, " ").trim(),
+            text: seg.snippet.toString().replace(/\n/g, " ").trim(),
           }))
           .filter((s: TranscriptSegment) => s.text) ?? [];
 
