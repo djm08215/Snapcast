@@ -4,11 +4,11 @@ import { extractVideoId } from "@/lib/transcript";
 import type { TranscriptSegment } from "@/lib/types";
 import { jsonResponse, handleOptions } from "@/lib/cors";
 
-export { handleOptions as OPTIONS } from "@/lib/cors";
+export async function OPTIONS(req: Request) {
+  return handleOptions(req) ?? new Response(null, { status: 204 });
+}
 
 export async function POST(req: Request) {
-  const preflight = handleOptions(req);
-  if (preflight) return preflight;
   const origin = req.headers.get("origin");
 
   try {

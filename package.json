@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "vercel-build": "next build",
-    "build:toss": "TOSS_BUILD=1 NEXT_PUBLIC_API_BASE=https://snapcast-gilt.vercel.app next build"
+    "build:toss": "cross-env TOSS_BUILD=1 NEXT_PUBLIC_API_BASE=https://snapcast-gilt.vercel.app next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -28,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "cross-env": "^10.1.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "postcss": "^8",

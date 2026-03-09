@@ -29,12 +29,13 @@ const SYSTEM_PROMPT = `당신은 팟캐스트 및 정보성 유튜브 영상 전
 - 모든 텍스트는 한국어로 작성
 - timestamp는 트랜스크립트의 실제 시간 표시 기준`;
 
-export { handleOptions as OPTIONS } from "@/lib/cors";
 import { corsHeaders, handleOptions } from "@/lib/cors";
 
+export async function OPTIONS(req: Request) {
+  return handleOptions(req) ?? new Response(null, { status: 204 });
+}
+
 export async function POST(req: Request) {
-  const preflight = handleOptions(req);
-  if (preflight) return preflight;
   const origin = req.headers.get("origin");
 
   if (!process.env.ANTHROPIC_API_KEY) {

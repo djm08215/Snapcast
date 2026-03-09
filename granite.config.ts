@@ -12,8 +12,9 @@ export default defineConfig({
     port: 3000,
     commands: {
       dev: "next dev",
-      build: "TOSS_BUILD=1 next build",
+      build: "cross-env TOSS_BUILD=1 NEXT_PUBLIC_API_BASE=https://snapcast-gilt.vercel.app next build",
     },
   },
+  outdir: "out",
   permissions: [],
 });
