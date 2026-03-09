@@ -16,12 +16,8 @@ export default function Home() {
       <div className="border-b border-gray-200 bg-white/70 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="font-bold text-gray-900">Podcast Shortener</span>
+            <img src="/snapcast.png" alt="Snapcast" className="w-8 h-8 rounded-lg object-contain" />
+            <span className="font-bold text-gray-900">Snapcast</span>
           </div>
           {state.status === "done" && (
             <button
