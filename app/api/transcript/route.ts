@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     // Try multiple Innertube clients — WEB client strips captions on datacenter IPs,
     // but ANDROID and TVHTML5_SIMPLY_EMBEDDED_PLAYER often return full data.
-    const clients = [
+    const clients: Array<{ headers: Record<string, string>; context: Record<string, unknown> }> = [
       {
         headers: {
           "X-YouTube-Client-Name": "3",
