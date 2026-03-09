@@ -2,25 +2,31 @@ export const maxDuration = 60;
 
 import { extractVideoId } from "@/lib/transcript";
 import type { TranscriptSegment } from "@/lib/types";
+import { jsonResponse, handleOptions } from "@/lib/cors";
+
+export { handleOptions as OPTIONS } from "@/lib/cors";
 
 export async function POST(req: Request) {
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  const origin = req.headers.get("origin");
+
   try {
     const { url } = await req.json();
     if (!url) {
-      return Response.json({ error: "URL이 필요합니다." }, { status: 400 });
+      return jsonResponse({ error: "URL이 필요합니다." }, origin, { status: 400 });
     }
 
     const videoId = extractVideoId(url);
     if (!videoId) {
-      return Response.json({ error: "유효하지 않은 YouTube URL입니다." }, { status: 400 });
+      return jsonResponse({ error: "유효하지 않은 YouTube URL입니다." }, origin, { status: 400 });
     }
 
     const apiKey = process.env.SUPADATA_API_KEY;
     if (!apiKey) {
-      return Response.json({ error: "서버 설정 오류" }, { status: 500 });
+      return jsonResponse({ error: "서버 설정 오류" }, origin, { status: 500 });
     }
 
-    // Try Korean first, fall back to any available language
     const res = await fetch(
       `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}`,
       { headers: { "x-api-key": apiKey } }
@@ -30,15 +36,17 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       if (res.status === 404) {
-        return Response.json(
+        return jsonResponse(
           { error: "이 영상에는 자막(트랜스크립트)이 없습니다." },
+          origin,
           { status: 404 }
         );
       }
       const errText = await res.text();
       console.error("[transcript] supadata error:", errText);
-      return Response.json(
+      return jsonResponse(
         { error: "트랜스크립트를 가져올 수 없습니다. 잠시 후 다시 시도해주세요." },
+        origin,
         { status: 500 }
       );
     }
@@ -55,18 +63,20 @@ export async function POST(req: Request) {
     );
 
     if (segments.length === 0) {
-      return Response.json(
+      return jsonResponse(
         { error: "이 영상에는 자막(트랜스크립트)이 없습니다." },
+        origin,
         { status: 404 }
       );
     }
 
-    return Response.json({ segments, videoId });
+    return jsonResponse({ segments, videoId }, origin);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
     console.error("[transcript] error:", message);
-    return Response.json(
+    return jsonResponse(
       { error: "트랜스크립트를 가져올 수 없습니다. 잠시 후 다시 시도해주세요." },
+      origin,
       { status: 500 }
     );
   }

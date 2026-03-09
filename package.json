@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "next build"
+    "vercel-build": "next build",
+    "build:toss": "TOSS_BUILD=1 NEXT_PUBLIC_API_BASE=https://snapcast-gilt.vercel.app next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@apps-in-toss/web-framework": "^1.14.1",
     "@fontsource/noto-sans-kr": "^5.2.9",
     "@react-pdf/renderer": "^4.3.2",
     "@supabase/supabase-js": "^2.98.0",
+    "@toss/tds-mobile": "^2.2.1",
     "clsx": "^2.1.1",
     "next": "14.2.35",
     "react": "^18",

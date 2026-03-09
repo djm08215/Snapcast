@@ -18,11 +18,12 @@ export function useSummarize() {
   const summarize = useCallback(async (url: string) => {
     setState({ status: "fetching-transcript" });
 
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE ?? "";
+
     // 1. Fetch transcript
     let segments, videoId;
     try {
-      // Step 1a: get caption URL from server (uses Innertube API)
-      const res = await fetch("/api/transcript", {
+      const res = await fetch(`${apiBase}/api/transcript`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
@@ -56,7 +57,7 @@ export function useSummarize() {
     setState({ status: "summarizing", streamedText: "" });
 
     try {
-      const res = await fetch("/api/summarize", {
+      const res = await fetch(`${apiBase}/api/summarize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcriptText }),

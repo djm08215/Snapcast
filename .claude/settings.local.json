@@ -15,7 +15,10 @@
       "Bash(npm list:*)",
       "Bash(mkdir:*)",
       "WebFetch(domain:developers-apps-in-toss.toss.im)",
-      "Bash(\"C:/Users/admin/OneDrive/Desktop/workspace/podcast-shortener/.gitignore\":*)"
+      "Bash(\"C:/Users/admin/OneDrive/Desktop/workspace/podcast-shortener/.gitignore\":*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(git:*)"
     ]
   }
 }
