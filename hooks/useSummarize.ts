@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { SummaryResult } from "@/lib/types";
-import { transcriptToText, estimateTokens, parseJson3 } from "@/lib/transcript";
+import { transcriptToText, estimateTokens } from "@/lib/transcript";
 import { saveHistory } from "@/lib/history";
 
 type State =
@@ -34,18 +34,8 @@ export function useSummarize() {
       }
       videoId = data.videoId;
 
-      if (data.segments) {
-        segments = data.segments;
-      } else if (data.captionContent) {
-        // Server fetched content directly (authenticated URL bypassed CDN block)
-        segments = parseJson3(JSON.parse(data.captionContent));
-      } else if (data.captionUrl) {
-        // Return authenticated URL to browser — client fetches from real IP
-        const captionRes = await fetch(data.captionUrl + "&fmt=json3");
-        if (captionRes.ok) segments = parseJson3(await captionRes.json());
-      }
-
-      if (!segments || !segments.length) {
+      segments = data.segments;
+      if (!segments?.length) {
         setState({ status: "error", message: "이 영상에는 자막(트랜스크립트)이 없습니다." });
         return;
       }
