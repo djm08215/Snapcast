@@ -20,9 +20,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const yt = await Innertube.create({ retrieve_player: false });
+    const yt = await Innertube.create();
     const info = await yt.getInfo(videoId);
     const tracks = info.captions?.caption_tracks;
+    console.log("caption_tracks count:", tracks?.length, "videoId:", videoId);
 
     if (!tracks || tracks.length === 0) {
       return Response.json(
