@@ -1,0 +1,54 @@
+import type { TranscriptSegment } from "./types";
+
+export function extractVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([^&?/\s]+)/,
+    /youtube\.com\/embed\/([^?/\s]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+export function formatTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+export function transcriptToText(segments: TranscriptSegment[]): string {
+  return segments
+    .map((s) => `[${formatTime(s.offset / 1000)}] ${s.text}`)
+    .join(" ");
+}
+
+export function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+export function chunkTranscriptByTime(
+  segments: TranscriptSegment[],
+  windowMinutes = 10
+): TranscriptSegment[][] {
+  const windowMs = windowMinutes * 60 * 1000;
+  const chunks: TranscriptSegment[][] = [];
+  let current: TranscriptSegment[] = [];
+  let windowStart = 0;
+
+  for (const seg of segments) {
+    if (seg.offset >= windowStart + windowMs) {
+      if (current.length) chunks.push(current);
+      current = [];
+      windowStart = seg.offset;
+    }
+    current.push(seg);
+  }
+  if (current.length) chunks.push(current);
+  return chunks;
+}

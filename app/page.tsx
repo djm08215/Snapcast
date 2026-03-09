@@ -1,101 +1,158 @@
-import Image from "next/image";
+"use client";
+
+import { useSummarize } from "@/hooks/useSummarize";
+import { UrlForm } from "@/components/UrlForm";
+import { LoadingState } from "@/components/LoadingState";
+import { Timeline } from "@/components/Timeline";
+import { PdfDownloadButton } from "@/components/PdfDownloadButton";
+import { History } from "@/components/History";
+import type { SummaryResult } from "@/lib/types";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const { state, summarize, reset, restoreFromHistory } = useSummarize();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header */}
+      <div className="border-b border-gray-200 bg-white/70 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <span className="font-bold text-gray-900">Podcast Shortener</span>
+          </div>
+          {state.status === "done" && (
+            <button
+              onClick={reset}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              새로 시작
+            </button>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        {/* Hero */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            유튜브 영상을 AI로 요약해드립니다
+          </h1>
+          <p className="text-gray-500 text-base">
+            팟캐스트, 강의, 인터뷰 등 정보성 영상의 핵심을 타임라인으로 정리해드립니다.
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="flex justify-center mb-8">
+          <UrlForm
+            onSubmit={summarize}
+            disabled={state.status === "fetching-transcript" || state.status === "summarizing"}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+
+        {/* Loading */}
+        {(state.status === "fetching-transcript" || state.status === "summarizing") && (
+          <div className="flex justify-center">
+            <LoadingState
+              status={state.status}
+              streamedText={state.status === "summarizing" ? state.streamedText : undefined}
+            />
+          </div>
+        )}
+
+        {/* Error */}
+        {state.status === "error" && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-center">
+            <p className="text-red-700 font-medium mb-1">오류가 발생했습니다</p>
+            <p className="text-red-500 text-sm">{state.message}</p>
+            <button
+              onClick={reset}
+              className="mt-4 text-sm text-red-600 hover:text-red-800 underline"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {/* Result */}
+        {state.status === "done" && (
+          <div className="space-y-8">
+            {/* Title + Actions */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                {state.result.videoTitle && (
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">
+                    {state.result.videoTitle}
+                  </h2>
+                )}
+                <a
+                  href={state.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  원본 영상 보기 →
+                </a>
+              </div>
+              <PdfDownloadButton result={state.result} videoUrl={state.url} />
+            </div>
+
+            {/* Overall Summary */}
+            <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-base font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <span className="w-5 h-5 bg-blue-100 rounded text-blue-600 text-xs flex items-center justify-center font-bold">요</span>
+                전체 요약
+              </h3>
+              <p className="text-gray-700 leading-relaxed text-sm">
+                {state.result.overallSummary}
+              </p>
+            </section>
+
+            {/* Timeline */}
+            <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-base font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <span className="w-5 h-5 bg-blue-100 rounded text-blue-600 text-xs flex items-center justify-center font-bold">타</span>
+                타임라인 ({state.result.timeline.length}개 구간)
+              </h3>
+              <p className="text-xs text-gray-400 mb-4">
+                각 항목을 클릭하면 해당 시간대로 영상이 열립니다.
+              </p>
+              <Timeline timeline={state.result.timeline} videoId={state.videoId} />
+            </section>
+          </div>
+        )}
+
+        {/* History */}
+        {(state.status === "idle" || state.status === "error") && (
+          <div className="flex justify-center mt-6">
+            <History onSelect={restoreFromHistory} />
+          </div>
+        )}
+
+        {/* Empty state guide */}
+        {state.status === "idle" && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            {[
+              { icon: "🎙️", title: "팟캐스트", desc: "긴 팟캐스트 영상의 핵심만 빠르게 확인" },
+              { icon: "🎓", title: "강의·강연", desc: "교육 영상의 학습 포인트를 정리" },
+              { icon: "📰", title: "뉴스·인터뷰", desc: "인터뷰와 뉴스 분석 영상 요약" },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-white/60 rounded-xl p-4 text-center border border-gray-100"
+              >
+                <div className="text-2xl mb-2">{item.icon}</div>
+                <p className="font-semibold text-gray-800 text-sm mb-1">{item.title}</p>
+                <p className="text-xs text-gray-500">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
