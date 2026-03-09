@@ -72,7 +72,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({ videoId, context: client.context }),
         }
       );
-      console.log("[transcript] client:", client.context.client.clientName, "status:", playerRes.status);
+      console.log("[transcript] client:", client.headers["X-YouTube-Client-Name"], "status:", playerRes.status);
       if (!playerRes.ok) continue;
       const data = await playerRes.json();
       tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
