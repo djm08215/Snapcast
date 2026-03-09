@@ -9,59 +9,65 @@ interface CaptionTrack {
   kind?: string;
 }
 
-async function fetchCaptionTracksFromInnertube(
-  videoId: string
-): Promise<CaptionTrack[] | null> {
-  const clients: Array<{ headers: Record<string, string>; context: Record<string, unknown> }> = [
-    {
-      headers: { "X-YouTube-Client-Name": "5", "X-YouTube-Client-Version": "19.09.3", "User-Agent": "com.google.ios.youtube/19.09.3 (iPhone16,2; U; CPU iOS 17_1_2 like Mac OS X)" },
-      context: { client: { clientName: "IOS", clientVersion: "19.09.3", deviceModel: "iPhone16,2", hl: "ko", gl: "KR" } },
+// Strategy: fetch the YouTube watch page with browser-like headers.
+// Unlike the embed page, the watch page contains ytInitialPlayerResponse
+// with full caption track data.
+async function getCaptionUrlFromWatchPage(videoId: string): Promise<string | null> {
+  const res = await fetch(`https://www.youtube.com/watch?v=${videoId}&hl=ko&gl=KR`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+      "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      // CONSENT cookie bypasses the YouTube cookie consent / GDPR banner
+      "Cookie": "CONSENT=YES+cb; VISITOR_INFO1_LIVE=; GPS=1; PREF=f6=40000000&hl=ko&gl=KR",
     },
-    {
-      headers: { "X-YouTube-Client-Name": "2", "X-YouTube-Client-Version": "2.20231121.01.00", "User-Agent": "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36" },
-      context: { client: { clientName: "MWEB", clientVersion: "2.20231121.01.00", hl: "ko", gl: "KR" } },
-    },
-    {
-      headers: { "X-YouTube-Client-Name": "56", "X-YouTube-Client-Version": "1.20231121.01.00", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36", Origin: "https://www.youtube.com", Referer: "https://www.youtube.com/" },
-      context: { client: { clientName: "WEB_EMBEDDED_PLAYER", clientVersion: "1.20231121.01.00", hl: "ko", gl: "KR" } },
-    },
-    {
-      headers: { "X-YouTube-Client-Name": "3", "X-YouTube-Client-Version": "19.09.37", "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip" },
-      context: { client: { clientName: "ANDROID", clientVersion: "19.09.37", androidSdkVersion: 30, hl: "ko", gl: "KR" } },
-    },
-    {
-      headers: { "X-YouTube-Client-Name": "85", "X-YouTube-Client-Version": "2.0", "User-Agent": "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/6.0 TV Safari/538.1" },
-      context: { client: { clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER", clientVersion: "2.0", hl: "ko", gl: "KR" } },
-    },
-    {
-      headers: { "X-YouTube-Client-Name": "1", "X-YouTube-Client-Version": "2.20231121.01.00", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36", Origin: "https://www.youtube.com", Referer: "https://www.youtube.com/" },
-      context: { client: { clientName: "WEB", clientVersion: "2.20231121.01.00", hl: "ko", gl: "KR" } },
-    },
-  ];
+  });
 
-  for (const client of clients) {
-    try {
-      const res = await fetch(
-        "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...client.headers },
-          body: JSON.stringify({ videoId, context: client.context }),
-        }
-      );
-      const name = client.headers["X-YouTube-Client-Name"];
-      console.log("[transcript] client", name, "status:", res.status);
-      if (!res.ok) continue;
-      const data = await res.json();
-      const tracks: CaptionTrack[] | undefined =
-        data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-      console.log("[transcript] client", name, "tracks:", tracks?.length ?? 0);
-      if (tracks && tracks.length > 0) return tracks;
-    } catch (e) {
-      console.error("[transcript] client error:", e instanceof Error ? e.message : e);
-    }
+  console.log("[transcript] watch page status:", res.status);
+  if (!res.ok) return null;
+
+  const html = await res.text();
+  console.log("[transcript] watch page length:", html.length);
+
+  // ytInitialPlayerResponse is inline in the HTML as a JS variable assignment
+  const idx = html.indexOf("ytInitialPlayerResponse");
+  if (idx === -1) {
+    console.log("[transcript] ytInitialPlayerResponse not found in watch page");
+    return null;
   }
-  return null;
+
+  // Extract the JSON object starting from the first { after the variable name
+  const jsonStart = html.indexOf("{", idx);
+  if (jsonStart === -1) return null;
+
+  // Walk braces to find the matching closing brace
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  let i = jsonStart;
+  for (; i < html.length; i++) {
+    const ch = html[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) break; }
+  }
+
+  try {
+    const playerResponse = JSON.parse(html.slice(jsonStart, i + 1));
+    const tracks: CaptionTrack[] | undefined =
+      playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    console.log("[transcript] watch page captionTracks:", tracks?.length ?? 0);
+    if (!tracks || tracks.length === 0) return null;
+    const track = tracks.find((t) => t.languageCode === "ko") || tracks[0];
+    console.log("[transcript] watch page track lang:", track.languageCode);
+    return track.baseUrl;
+  } catch (e) {
+    console.error("[transcript] watch page JSON parse error:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 export async function POST(req: Request) {
@@ -70,32 +76,40 @@ export async function POST(req: Request) {
     if (!url) {
       return Response.json({ error: "URL이 필요합니다." }, { status: 400 });
     }
-
     const videoId = extractVideoId(url);
     if (!videoId) {
       return Response.json({ error: "유효하지 않은 YouTube URL입니다." }, { status: 400 });
     }
 
-    const tracks = await fetchCaptionTracksFromInnertube(videoId);
+    // Primary: parse watch page to get authenticated captionUrl
+    const captionUrl = await getCaptionUrlFromWatchPage(videoId);
 
-    if (tracks && tracks.length > 0) {
-      const track = tracks.find((t) => t.languageCode === "ko") || tracks[0];
-      console.log("[transcript] selected track lang:", track.languageCode);
-      return Response.json({ captionUrl: track.baseUrl, videoId });
+    if (captionUrl) {
+      // Try fetching caption content server-side with authenticated URL
+      // (signed tokens may bypass the CDN IP block)
+      try {
+        const contentRes = await fetch(captionUrl + "&fmt=json3");
+        console.log("[transcript] server content fetch status:", contentRes.status);
+        if (contentRes.ok) {
+          const text = await contentRes.text();
+          console.log("[transcript] server content length:", text.length);
+          if (text.length > 100) {
+            // Got actual content — return it for client to parse
+            return Response.json({ captionContent: text, videoId });
+          }
+        }
+      } catch (e) {
+        console.error("[transcript] server content fetch error:", e instanceof Error ? e.message : e);
+      }
+
+      // Server content was empty/blocked — return URL to client for browser fetch
+      return Response.json({ captionUrl, videoId });
     }
 
-    // Last resort: return simple timedtext URLs for client-side fetching.
-    // The browser can access YouTube from a real IP without IP blocking.
-    console.log("[transcript] all clients returned 0 tracks — falling back to client-side timedtext URLs");
-    return Response.json({
-      videoId,
-      captionUrls: [
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=ko&fmt=json3`,
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=ko&kind=asr&fmt=json3`,
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&fmt=json3`,
-        `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en&kind=asr&fmt=json3`,
-      ],
-    });
+    return Response.json(
+      { error: "이 영상에는 자막(트랜스크립트)이 없습니다." },
+      { status: 404 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
     console.error("[transcript] error:", message);

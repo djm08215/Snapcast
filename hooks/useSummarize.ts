@@ -36,24 +36,13 @@ export function useSummarize() {
 
       if (data.segments) {
         segments = data.segments;
+      } else if (data.captionContent) {
+        // Server fetched content directly (authenticated URL bypassed CDN block)
+        segments = parseJson3(JSON.parse(data.captionContent));
       } else if (data.captionUrl) {
-        // Server found an authenticated caption URL — fetch content from browser IP
+        // Return authenticated URL to browser — client fetches from real IP
         const captionRes = await fetch(data.captionUrl + "&fmt=json3");
-        if (!captionRes.ok) {
-          setState({ status: "error", message: "자막을 가져올 수 없습니다." });
-          return;
-        }
-        segments = parseJson3(await captionRes.json());
-      } else if (data.captionUrls) {
-        // Last resort: try plain timedtext URLs from browser (no auth tokens)
-        for (const captionUrl of data.captionUrls as string[]) {
-          try {
-            const captionRes = await fetch(captionUrl);
-            if (!captionRes.ok) continue;
-            const parsed = parseJson3(await captionRes.json());
-            if (parsed.length > 0) { segments = parsed; break; }
-          } catch { /* try next */ }
-        }
+        if (captionRes.ok) segments = parseJson3(await captionRes.json());
       }
 
       if (!segments || !segments.length) {
