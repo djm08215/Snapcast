@@ -37,6 +37,7 @@ export function parseJson3(json: unknown): TranscriptSegment[] {
   const data = json as {
     events?: Array<{
       tStartMs?: number;
+      dDurationMs?: number;
       segs?: Array<{ utf8?: string }>;
     }>;
   };
