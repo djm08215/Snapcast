@@ -98,7 +98,7 @@ export function useSummarize() {
         if (!jsonMatch) throw new Error("JSON을 찾을 수 없습니다.");
         const result: SummaryResult = JSON.parse(jsonMatch[0]);
         setState({ status: "done", result, videoId, url });
-        saveHistory({ url, videoId, result });
+        saveHistory({ url, videoId, result }); // fire-and-forget
       } catch {
         setState({
           status: "error",

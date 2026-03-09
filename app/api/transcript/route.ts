@@ -1,6 +1,8 @@
+export const maxDuration = 60;
+
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { readFile, unlink, mkdir, readdir } from "fs/promises";
+import { readFile, unlink, mkdir, readdir, copyFile, chmod } from "fs/promises";
 import { existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -9,7 +11,20 @@ import type { TranscriptSegment } from "@/lib/types";
 
 const execFileAsync = promisify(execFile);
 
-const YTDLP_PATH = process.env.YTDLP_PATH || "yt-dlp";
+// On Linux (Vercel), copy the bundled binary to /tmp and make executable.
+// On Windows (local dev), use the system yt-dlp via PATH or YTDLP_PATH env.
+async function resolveYtdlp(): Promise<string> {
+  if (process.env.YTDLP_PATH) return process.env.YTDLP_PATH;
+  if (process.platform !== "linux") return "yt-dlp";
+
+  const tmpBin = "/tmp/yt-dlp";
+  if (!existsSync(tmpBin)) {
+    const bundled = join(process.cwd(), "bin", "yt-dlp-linux");
+    await copyFile(bundled, tmpBin);
+    await chmod(tmpBin, 0o755);
+  }
+  return tmpBin;
+}
 
 interface Json3Event {
   tStartMs: number;
@@ -29,6 +44,7 @@ function parseJson3(json3: { events?: Json3Event[] }): TranscriptSegment[] {
 }
 
 async function fetchWithYtdlp(videoId: string, tmpDir: string): Promise<TranscriptSegment[]> {
+  const ytdlp = await resolveYtdlp();
   const outputTemplate = join(tmpDir, `%(id)s`);
 
   // Clean up existing files for this video
@@ -38,7 +54,7 @@ async function fetchWithYtdlp(videoId: string, tmpDir: string): Promise<Transcri
   }
 
   await execFileAsync(
-    YTDLP_PATH,
+    ytdlp,
     [
       "--write-auto-sub",
       "--skip-download",

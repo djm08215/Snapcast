@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(yt-dlp:*)",
+      "Bash(pip show:*)",
+      "Bash(winget install:*)",
+      "Bash(where yt-dlp)",
+      "Read(//c/Users/admin/**)",
+      "Bash(/c/Users/admin/AppData/Local/Microsoft/WinGet/Packages/yt-dlp.yt-dlp_Microsoft.Winget.Source_8wekyb3d8bbwe/yt-dlp.exe:*)",
+      "Bash(where node:*)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:developers-apps-in-toss.toss.im)",
+      "Bash(\"C:/Users/admin/OneDrive/Desktop/workspace/podcast-shortener/.gitignore\":*)"
+    ]
+  }
+}
