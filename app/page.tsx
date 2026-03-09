@@ -6,29 +6,18 @@ import { LoadingState } from "@/components/LoadingState";
 import { Timeline } from "@/components/Timeline";
 import { PdfDownloadButton } from "@/components/PdfDownloadButton";
 import { History } from "@/components/History";
+import { AppNavBar } from "@/components/AppNavBar";
 
 export default function Home() {
   const { state, summarize, reset, restoreFromHistory } = useSummarize();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <div className="border-b border-gray-200 bg-white/70 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src="/snapcast.png" alt="Snapcast" className="w-8 h-8 rounded-lg object-contain" />
-            <span className="font-bold text-gray-900">Snapcast</span>
-          </div>
-          {state.status === "done" && (
-            <button
-              onClick={reset}
-              className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              새로 시작
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Navigation Bar */}
+      <AppNavBar
+        showReset={state.status === "done"}
+        onReset={reset}
+      />
 
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Hero */}

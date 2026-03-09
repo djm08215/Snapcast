@@ -18,7 +18,13 @@
       "Bash(\"C:/Users/admin/OneDrive/Desktop/workspace/podcast-shortener/.gitignore\":*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(npx ait:*)",
+      "Bash(npx ait-web:*)",
+      "Bash(python3:*)",
+      "Bash(TOSS_BUILD=1 NEXT_PUBLIC_API_BASE=https://snapcast-gilt.vercel.app npx granite:*)",
+      "Bash(npx granite:*)",
+      "Bash(grep:*)"
     ]
   }
 }
