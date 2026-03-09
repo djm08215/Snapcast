@@ -35,23 +35,29 @@ export function useSummarize() {
       videoId = data.videoId;
 
       if (data.segments) {
-        // Server returned segments directly (getTranscript() succeeded)
         segments = data.segments;
       } else if (data.captionUrl) {
-        // Fallback: fetch caption content client-side (bypasses datacenter IP block)
+        // Server found an authenticated caption URL — fetch content from browser IP
         const captionRes = await fetch(data.captionUrl + "&fmt=json3");
         if (!captionRes.ok) {
           setState({ status: "error", message: "자막을 가져올 수 없습니다." });
           return;
         }
-        const captionJson = await captionRes.json();
-        segments = parseJson3(captionJson);
-        if (!segments.length) {
-          setState({ status: "error", message: "자막 내용을 파싱할 수 없습니다." });
-          return;
+        segments = parseJson3(await captionRes.json());
+      } else if (data.captionUrls) {
+        // Last resort: try plain timedtext URLs from browser (no auth tokens)
+        for (const captionUrl of data.captionUrls as string[]) {
+          try {
+            const captionRes = await fetch(captionUrl);
+            if (!captionRes.ok) continue;
+            const parsed = parseJson3(await captionRes.json());
+            if (parsed.length > 0) { segments = parsed; break; }
+          } catch { /* try next */ }
         }
-      } else {
-        setState({ status: "error", message: "자막 데이터를 받지 못했습니다." });
+      }
+
+      if (!segments || !segments.length) {
+        setState({ status: "error", message: "이 영상에는 자막(트랜스크립트)이 없습니다." });
         return;
       }
     } catch {
