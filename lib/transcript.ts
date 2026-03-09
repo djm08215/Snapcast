@@ -50,7 +50,7 @@ export function parseJson3(json: unknown): TranscriptSegment[] {
       .replace(/\n/g, " ")
       .trim();
     if (!text) continue;
-    segments.push({ offset: event.tStartMs, text });
+    segments.push({ offset: event.tStartMs, duration: event.dDurationMs ?? 0, text });
   }
   return segments;
 }
