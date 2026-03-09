@@ -1,5 +1,5 @@
-import { createWriteStream, existsSync, mkdirSync, chmodSync } from "fs";
-import { get } from "https";
+import { execSync } from "child_process";
+import { existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -10,35 +10,19 @@ const binPath = join(binDir, "yt-dlp-linux");
 if (!existsSync(binDir)) mkdirSync(binDir, { recursive: true });
 
 if (existsSync(binPath)) {
-  console.log("yt-dlp already exists, skipping download.");
+  console.log("yt-dlp already exists, skipping.");
   process.exit(0);
 }
 
-const URL = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux";
+const URL =
+  "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux";
 
-function download(url, dest) {
-  return new Promise((resolve, reject) => {
-    get(url, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return download(res.headers.location, dest).then(resolve).catch(reject);
-      }
-      if (res.statusCode !== 200) {
-        return reject(new Error(`HTTP ${res.statusCode}`));
-      }
-      const file = createWriteStream(dest);
-      res.pipe(file);
-      file.on("finish", () => {
-        file.close();
-        chmodSync(dest, 0o755);
-        console.log("yt-dlp downloaded successfully.");
-        resolve();
-      });
-    }).on("error", reject);
-  });
-}
-
-console.log("Downloading yt-dlp Linux binary...");
-download(URL, binPath).catch((e) => {
-  console.error("Failed to download yt-dlp:", e.message);
+console.log("Downloading yt-dlp...");
+try {
+  execSync(`curl -L -o "${binPath}" "${URL}"`, { stdio: "inherit" });
+  execSync(`chmod +x "${binPath}"`);
+  console.log("yt-dlp ready.");
+} catch (e) {
+  console.error("Download failed:", e.message);
   process.exit(1);
-});
+}
