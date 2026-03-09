@@ -1,30 +1,8 @@
 export const maxDuration = 60;
 
-import { execFile } from "child_process";
-import { promisify } from "util";
-import { readFile, unlink, mkdir, readdir, copyFile, chmod } from "fs/promises";
-import { existsSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { Innertube } from "youtubei.js";
 import { extractVideoId } from "@/lib/transcript";
 import type { TranscriptSegment } from "@/lib/types";
-
-const execFileAsync = promisify(execFile);
-
-// On Linux (Vercel), copy the bundled binary to /tmp and make executable.
-// On Windows (local dev), use the system yt-dlp via PATH or YTDLP_PATH env.
-async function resolveYtdlp(): Promise<string> {
-  if (process.env.YTDLP_PATH) return process.env.YTDLP_PATH;
-  if (process.platform !== "linux") return "yt-dlp";
-
-  const tmpBin = "/tmp/yt-dlp";
-  if (!existsSync(tmpBin)) {
-    const bundled = join(process.cwd(), "bin", "yt-dlp-linux");
-    await copyFile(bundled, tmpBin);
-    await chmod(tmpBin, 0o755);
-  }
-  return tmpBin;
-}
 
 interface Json3Event {
   tStartMs: number;
@@ -43,39 +21,29 @@ function parseJson3(json3: { events?: Json3Event[] }): TranscriptSegment[] {
     .filter((s) => s.text.length > 0);
 }
 
-async function fetchWithYtdlp(videoId: string, tmpDir: string): Promise<TranscriptSegment[]> {
-  const ytdlp = await resolveYtdlp();
-  const outputTemplate = join(tmpDir, `%(id)s`);
+async function fetchTranscript(videoId: string): Promise<TranscriptSegment[]> {
+  const yt = await Innertube.create({ retrieve_player: false });
+  const info = await yt.getInfo(videoId);
+  const tracks = info.captions?.caption_tracks;
 
-  // Clean up existing files for this video
-  const existing = await readdir(tmpDir).catch(() => [] as string[]);
-  for (const f of existing.filter((n) => n.startsWith(videoId))) {
-    await unlink(join(tmpDir, f)).catch(() => {});
+  if (!tracks || tracks.length === 0) {
+    throw new Error("No captions available");
   }
 
-  await execFileAsync(
-    ytdlp,
-    [
-      "--write-auto-sub",
-      "--skip-download",
-      "--sub-format", "json3",
-      "--extractor-retries", "3",
-      "--sleep-requests", "1",
-      "-o", outputTemplate,
-      `https://www.youtube.com/watch?v=${videoId}`,
-    ],
-    { timeout: 60000 }
-  );
+  // Prefer Korean, fallback to first available
+  const track =
+    tracks.find((t: { language_code: string }) => t.language_code === "ko") ||
+    tracks[0];
 
-  const files = (await readdir(tmpDir)).filter(
-    (n) => n.startsWith(videoId) && n.endsWith(".json3")
-  );
-  if (files.length === 0) return [];
+  const url = new URL(track.base_url + "&fmt=json3");
+  const res = await yt.session.http.fetch(url);
 
-  const content = await readFile(join(tmpDir, files[0]), "utf-8");
-  for (const f of files) await unlink(join(tmpDir, f)).catch(() => {});
+  if (!res.ok) {
+    throw new Error(`Caption fetch failed: ${res.status}`);
+  }
 
-  return parseJson3(JSON.parse(content));
+  const json3 = await res.json() as { events?: Json3Event[] };
+  return parseJson3(json3);
 }
 
 export async function POST(req: Request) {
@@ -93,10 +61,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const tmpDir = join(tmpdir(), "podcast-shortener");
-    if (!existsSync(tmpDir)) await mkdir(tmpDir, { recursive: true });
-
-    const segments = await fetchWithYtdlp(videoId, tmpDir);
+    const segments = await fetchTranscript(videoId);
 
     if (segments.length === 0) {
       return Response.json(
@@ -110,16 +75,14 @@ export async function POST(req: Request) {
     const message = error instanceof Error ? error.message : "트랜스크립트를 가져올 수 없습니다.";
     console.error("transcript error:", message);
 
-    const isRateLimit = message.includes("429");
-    const isNoSub = message.includes("subtitles") || message.includes("Transcript");
+    const isNoCaption =
+      message.includes("No captions") || message.includes("Transcript");
 
     return Response.json(
       {
-        error: isRateLimit
-          ? "YouTube 요청 한도 초과. 잠시 후 다시 시도해주세요."
-          : isNoSub
+        error: isNoCaption
           ? "이 영상에는 자막(트랜스크립트)이 없습니다."
-          : message,
+          : "트랜스크립트를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.",
       },
       { status: 500 }
     );
