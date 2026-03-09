@@ -23,47 +23,62 @@ export async function POST(req: Request) {
       return Response.json({ error: "유효하지 않은 YouTube URL입니다." }, { status: 400 });
     }
 
-    const playerRes = await fetch(
-      "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+    // Try multiple Innertube clients — WEB client strips captions on datacenter IPs,
+    // but ANDROID and TVHTML5_SIMPLY_EMBEDDED_PLAYER often return full data.
+    const clients = [
       {
-        method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "X-YouTube-Client-Name": "3",
+          "X-YouTube-Client-Version": "19.09.37",
+          "User-Agent": "com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip",
+        },
+        context: {
+          client: { clientName: "ANDROID", clientVersion: "19.09.37", androidSdkVersion: 30, hl: "ko", gl: "KR" },
+        },
+      },
+      {
+        headers: {
+          "X-YouTube-Client-Name": "85",
+          "X-YouTube-Client-Version": "2.0",
+          "User-Agent": "Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/6.0 TV Safari/538.1",
+        },
+        context: {
+          client: { clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER", clientVersion: "2.0", hl: "ko", gl: "KR" },
+        },
+      },
+      {
+        headers: {
           "X-YouTube-Client-Name": "1",
           "X-YouTube-Client-Version": "2.20231121.01.00",
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
           Origin: "https://www.youtube.com",
           Referer: "https://www.youtube.com/",
         },
-        body: JSON.stringify({
-          videoId,
-          context: {
-            client: {
-              clientName: "WEB",
-              clientVersion: "2.20231121.01.00",
-              hl: "ko",
-              gl: "KR",
-            },
-          },
-        }),
-      }
-    );
+        context: {
+          client: { clientName: "WEB", clientVersion: "2.20231121.01.00", hl: "ko", gl: "KR" },
+        },
+      },
+    ];
 
-    console.log("[transcript] player API status:", playerRes.status, "videoId:", videoId);
+    let tracks: CaptionTrack[] | undefined;
+    let playerRes: Response | undefined;
 
-    if (!playerRes.ok) {
-      return Response.json(
-        { error: "트랜스크립트를 가져올 수 없습니다. 잠시 후 다시 시도해주세요." },
-        { status: 500 }
+    for (const client of clients) {
+      playerRes = await fetch(
+        "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...client.headers },
+          body: JSON.stringify({ videoId, context: client.context }),
+        }
       );
+      console.log("[transcript] client:", client.context.client.clientName, "status:", playerRes.status);
+      if (!playerRes.ok) continue;
+      const data = await playerRes.json();
+      tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      console.log("[transcript] captionTracks:", tracks?.length ?? 0);
+      if (tracks && tracks.length > 0) break;
     }
-
-    const playerResponse = await playerRes.json();
-    const tracks: CaptionTrack[] | undefined =
-      playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-
-    console.log("[transcript] captionTracks:", tracks?.length ?? 0);
 
     if (!tracks || tracks.length === 0) {
       return Response.json(
