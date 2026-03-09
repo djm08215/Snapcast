@@ -1,8 +1,20 @@
 export const maxDuration = 60;
 
-import { Innertube } from "youtubei.js";
 import { extractVideoId } from "@/lib/transcript";
-import type { TranscriptSegment } from "@/lib/types";
+
+interface CaptionTrack {
+  baseUrl: string;
+  languageCode: string;
+  kind?: string;
+}
+
+interface PlayerResponse {
+  captions?: {
+    playerCaptionsTracklistRenderer?: {
+      captionTracks?: CaptionTrack[];
+    };
+  };
+}
 
 export async function POST(req: Request) {
   try {
@@ -13,60 +25,63 @@ export async function POST(req: Request) {
 
     const videoId = extractVideoId(url);
     if (!videoId) {
-      return Response.json(
-        { error: "유효하지 않은 YouTube URL입니다." },
-        { status: 400 }
-      );
+      return Response.json({ error: "유효하지 않은 YouTube URL입니다." }, { status: 400 });
     }
 
-    const yt = await Innertube.create();
-    const info = await yt.getInfo(videoId);
+    // Fetch YouTube embed page — less IP-restricted than main page or Innertube player
+    const embedRes = await fetch(`https://www.youtube.com/embed/${videoId}?hl=ko`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+      },
+    });
 
-    // Detailed logging to diagnose Vercel IP issues
-    console.log("[transcript] videoId:", videoId);
-    console.log("[transcript] captions type:", typeof info.captions);
-    console.log("[transcript] caption_tracks count:", info.captions?.caption_tracks?.length ?? "N/A");
+    console.log("[transcript] embed fetch status:", embedRes.status, "videoId:", videoId);
 
-    // --- Strategy 1: getTranscript() via Innertube JSON API (not CDN) ---
-    try {
-      const transcriptData = await info.getTranscript();
-      const segments: TranscriptSegment[] =
-        transcriptData?.transcript?.content?.body?.initial_segments
-          ?.map((seg: { start_ms: string; end_ms: string; snippet: { toString: () => string } }) => ({
-            offset: Number(seg.start_ms),
-            duration: Number(seg.end_ms) - Number(seg.start_ms),
-            text: seg.snippet.toString().replace(/\n/g, " ").trim(),
-          }))
-          .filter((s: TranscriptSegment) => s.text) ?? [];
+    if (embedRes.ok) {
+      const html = await embedRes.text();
+      console.log("[transcript] embed html length:", html.length);
 
-      if (segments.length > 0) {
-        console.log("[transcript] getTranscript() succeeded, segments:", segments.length);
-        return Response.json({ segments, videoId });
+      // Extract ytInitialPlayerResponse (minified single-line JSON in embed page)
+      const match = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\})\s*;/);
+      if (match) {
+        try {
+          const playerResponse: PlayerResponse = JSON.parse(match[1]);
+          const tracks =
+            playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+          console.log("[transcript] captionTracks from embed:", tracks?.length ?? 0);
+
+          if (tracks && tracks.length > 0) {
+            const track =
+              tracks.find((t) => t.languageCode === "ko") || tracks[0];
+            console.log("[transcript] selected track lang:", track.languageCode);
+            return Response.json({ captionUrl: track.baseUrl, videoId });
+          } else {
+            return Response.json(
+              { error: "이 영상에는 자막(트랜스크립트)이 없습니다." },
+              { status: 404 }
+            );
+          }
+        } catch (parseErr) {
+          console.error(
+            "[transcript] JSON parse error:",
+            parseErr instanceof Error ? parseErr.message : parseErr
+          );
+        }
+      } else {
+        console.log("[transcript] ytInitialPlayerResponse not found");
+        console.log("[transcript] html snippet:", html.slice(0, 300));
       }
-      console.log("[transcript] getTranscript() returned 0 segments");
-    } catch (e) {
-      console.error("[transcript] getTranscript() error:", e instanceof Error ? e.message : e);
     }
 
-    // --- Strategy 2: return caption URL for client-side fetch ---
-    const tracks = info.captions?.caption_tracks;
-    if (!tracks || tracks.length === 0) {
-      console.error("[transcript] No caption tracks found at all");
-      return Response.json(
-        { error: "이 영상에는 자막(트랜스크립트)이 없습니다." },
-        { status: 500 }
-      );
-    }
-
-    const track =
-      tracks.find((t: { language_code: string }) => t.language_code === "ko") ||
-      tracks[0];
-
-    console.log("[transcript] falling back to captionUrl, lang:", track.language_code);
-    return Response.json({ captionUrl: track.base_url, videoId });
+    return Response.json(
+      { error: "트랜스크립트를 가져올 수 없습니다. 잠시 후 다시 시도해주세요." },
+      { status: 500 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    console.error("[transcript] top-level error:", message);
+    console.error("[transcript] error:", message);
     return Response.json(
       { error: "트랜스크립트를 가져올 수 없습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 }
