@@ -6,7 +6,6 @@ import { LoadingState } from "@/components/LoadingState";
 import { Timeline } from "@/components/Timeline";
 import { PdfDownloadButton } from "@/components/PdfDownloadButton";
 import { History } from "@/components/History";
-import type { SummaryResult } from "@/lib/types";
 
 export default function Home() {
   const { state, summarize, reset, restoreFromHistory } = useSummarize();
