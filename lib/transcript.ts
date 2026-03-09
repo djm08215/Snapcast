@@ -32,6 +32,29 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+// Parses YouTube JSON3 caption format into TranscriptSegment[]
+export function parseJson3(json: unknown): TranscriptSegment[] {
+  const data = json as {
+    events?: Array<{
+      tStartMs?: number;
+      segs?: Array<{ utf8?: string }>;
+    }>;
+  };
+  if (!data?.events) return [];
+  const segments: TranscriptSegment[] = [];
+  for (const event of data.events) {
+    if (event.tStartMs == null || !event.segs) continue;
+    const text = event.segs
+      .map((s) => s.utf8 ?? "")
+      .join("")
+      .replace(/\n/g, " ")
+      .trim();
+    if (!text) continue;
+    segments.push({ offset: event.tStartMs, text });
+  }
+  return segments;
+}
+
 export function chunkTranscriptByTime(
   segments: TranscriptSegment[],
   windowMinutes = 10

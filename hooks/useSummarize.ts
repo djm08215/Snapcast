@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { SummaryResult } from "@/lib/types";
-import { transcriptToText, estimateTokens } from "@/lib/transcript";
+import { transcriptToText, estimateTokens, parseJson3 } from "@/lib/transcript";
 import { saveHistory } from "@/lib/history";
 
 type State =
@@ -21,6 +21,7 @@ export function useSummarize() {
     // 1. Fetch transcript
     let segments, videoId;
     try {
+      // Step 1a: get caption URL from server (uses Innertube API)
       const res = await fetch("/api/transcript", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,8 +32,20 @@ export function useSummarize() {
         setState({ status: "error", message: data.error || "트랜스크립트 가져오기 실패" });
         return;
       }
-      segments = data.segments;
       videoId = data.videoId;
+
+      // Step 1b: fetch actual caption content from browser (bypasses datacenter IP block)
+      const captionRes = await fetch(data.captionUrl + "&fmt=json3");
+      if (!captionRes.ok) {
+        setState({ status: "error", message: "자막을 가져올 수 없습니다." });
+        return;
+      }
+      const captionJson = await captionRes.json();
+      segments = parseJson3(captionJson);
+      if (!segments.length) {
+        setState({ status: "error", message: "자막 내용을 파싱할 수 없습니다." });
+        return;
+      }
     } catch {
       setState({ status: "error", message: "네트워크 오류가 발생했습니다." });
       return;
