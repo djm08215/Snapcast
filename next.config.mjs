@@ -1,3 +1,6 @@
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
 /** @type {import('next').NextConfig} */
 const isTossBuild = process.env.TOSS_BUILD === "1";
 
@@ -20,6 +23,8 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [...(config.externals || []), "canvas", "jsdom"];
+      // Force fontkit CJS build which registers formats (ESM build doesn't)
+      config.resolve.alias["fontkit"] = require.resolve("fontkit/dist/main.cjs");
     }
     return config;
   },
