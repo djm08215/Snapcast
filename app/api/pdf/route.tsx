@@ -7,16 +7,18 @@ import { nanumGothicRegular } from "@/lib/fontData";
 Font.register({ family: "NanumGothic", src: nanumGothicRegular });
 
 // Patch FontSource._load to use webpack-bundled CJS fontkit (avoids broken ESM fontkit in @react-pdf/font)
-const family = (Font.getRegisteredFonts() as any)["NanumGothic"];
+type FontSourceLike = { src: string; options?: { postscriptName?: string }; data: unknown; _load: () => Promise<void> };
+type FamilyLike = { sources: FontSourceLike[] };
+const registeredFonts = Font.getRegisteredFonts() as unknown as Record<string, FamilyLike>;
+const family = registeredFonts["NanumGothic"];
 if (family?.sources?.[0]) {
-  const FontSourceProto = Object.getPrototypeOf(family.sources[0]);
+  const FontSourceProto = Object.getPrototypeOf(family.sources[0]) as FontSourceLike;
   const originalLoad = FontSourceProto._load;
-  FontSourceProto._load = async function(this: any) {
-    const src: string = this.src;
-    if (src?.startsWith("data:") && src.includes("base64,")) {
-      const raw = src.split(",")[1];
+  FontSourceProto._load = async function(this: FontSourceLike) {
+    if (this.src?.startsWith("data:") && this.src.includes("base64,")) {
+      const raw = this.src.split(",")[1];
       const buf = Buffer.from(raw, "base64");
-      this.data = (fontkit as any).create(buf, this.options?.postscriptName);
+      this.data = fontkit.create(buf, this.options?.postscriptName);
       return;
     }
     return originalLoad.call(this);
