@@ -58,7 +58,7 @@ export async function POST(req: Request) {
   const { result, videoUrl } = await req.json() as { result: SummaryResult; videoUrl: string };
   const buffer = await renderToBuffer(<PdfDocument result={result} videoUrl={videoUrl} />);
   const title = result.videoTitle?.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-") || "podcast-summary";
-  return new Response(buffer, {
+  return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${encodeURIComponent(title)}.pdf"`,
