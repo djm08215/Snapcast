@@ -15,21 +15,12 @@ let fontsRegistered = false;
 
 async function ensureFonts() {
   if (fontsRegistered) return;
-  const toBuffer = async (path: string) => {
-    const res = await fetch(path);
-    return res.arrayBuffer();
-  };
-  const [regular, bold] = await Promise.all([
-    toBuffer("/fonts/NanumGothic-Regular.ttf"),
-    toBuffer("/fonts/NanumGothic-Bold.ttf"),
-  ]);
+  const origin = window.location.origin;
   Font.register({
     family: "NanumGothic",
     fonts: [
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { src: regular as any, fontWeight: "normal" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { src: bold as any, fontWeight: "bold" },
+      { src: `${origin}/api/font/NanumGothic-Regular.ttf`, fontWeight: "normal" },
+      { src: `${origin}/api/font/NanumGothic-Bold.ttf`, fontWeight: "bold" },
     ],
   });
   fontsRegistered = true;
