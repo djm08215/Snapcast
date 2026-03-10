@@ -1,11 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+const SUMMARIZING_MESSAGES = [
+  "핵심 내용 분석 중...",
+  "중요 포인트 추출 중...",
+  "타임라인 구성 중...",
+  "핵심 요약 중...",
+  "마무리 정리 중...",
+];
+
 interface LoadingStateProps {
   status: "fetching-transcript" | "summarizing";
   streamedText?: string;
 }
 
-export function LoadingState({ status, streamedText }: LoadingStateProps) {
+export function LoadingState({ status }: LoadingStateProps) {
+  const [msgIndex, setMsgIndex] = useState(0);
+
+  useEffect(() => {
+    if (status !== "summarizing") return;
+    const id = setInterval(() => {
+      setMsgIndex((i) => (i + 1) % SUMMARIZING_MESSAGES.length);
+    }, 2000);
+    return () => clearInterval(id);
+  }, [status]);
+
   return (
     <div className="w-full max-w-3xl mt-8">
       <div className="flex items-center gap-3 mb-4">
@@ -21,18 +41,9 @@ export function LoadingState({ status, streamedText }: LoadingStateProps) {
         <span className="text-sm text-gray-600 font-medium">
           {status === "fetching-transcript"
             ? "자막을 가져오는 중..."
-            : "AI가 요약하는 중..."}
+            : SUMMARIZING_MESSAGES[msgIndex]}
         </span>
       </div>
-
-      {status === "summarizing" && streamedText && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <p className="text-xs text-gray-400 mb-2 font-mono">AI 응답 스트리밍...</p>
-          <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono max-h-40 overflow-y-auto">
-            {streamedText}
-          </pre>
-        </div>
-      )}
 
       {/* Skeleton */}
       <div className="mt-6 space-y-4 animate-pulse">
