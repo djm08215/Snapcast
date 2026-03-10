@@ -11,11 +11,12 @@ import {
 } from "@react-pdf/renderer";
 import type { SummaryResult } from "./types";
 
+const base = typeof window !== "undefined" ? window.location.origin : "";
 Font.register({
   family: "NanumGothic",
   fonts: [
-    { src: "/fonts/NanumGothic-Regular.ttf", fontWeight: "normal" },
-    { src: "/fonts/NanumGothic-Bold.ttf", fontWeight: "bold" },
+    { src: `${base}/fonts/NanumGothic-Regular.ttf`, fontWeight: "normal" },
+    { src: `${base}/fonts/NanumGothic-Bold.ttf`, fontWeight: "bold" },
   ],
 });
 
