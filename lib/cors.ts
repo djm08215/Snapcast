@@ -1,12 +1,13 @@
 const ALLOWED_ORIGINS = [
   "https://snapcast.apps.tossmini.com",
   "https://snapcast.private-apps.tossmini.com",
+  "https://snapcast.kr",
   "https://snapcast-gilt.vercel.app",
 ];
 
 export function corsHeaders(origin: string | null): HeadersInit {
   const allowed =
-    origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[2];
+    origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[3];
   return {
     "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Methods": "POST, OPTIONS",

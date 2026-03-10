@@ -30,6 +30,8 @@ const SYSTEM_PROMPT = `당신은 팟캐스트 및 정보성 유튜브 영상 전
 - timestamp는 트랜스크립트의 실제 시간 표시 기준`;
 
 import { corsHeaders, handleOptions } from "@/lib/cors";
+import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase-server";
+import { checkUsageLimit, FREE_LIMIT } from "@/lib/usage";
 
 export async function OPTIONS(req: Request) {
   return handleOptions(req) ?? new Response(null, { status: 204 });
@@ -43,6 +45,30 @@ export async function POST(req: Request) {
       { error: "ANTHROPIC_API_KEY가 설정되지 않았습니다." },
       { status: 500 }
     );
+  }
+
+  // 사용량 제한 체크 (로그인한 유저만)
+  let userId: string | null = null;
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { allowed, count, plan } = await checkUsageLimit(supabase, user.id);
+      if (!allowed) {
+        return Response.json(
+          {
+            error: `이번 달 무료 요약 횟수(${FREE_LIMIT}회)를 모두 사용하셨습니다. Pro로 업그레이드하면 무제한으로 이용할 수 있습니다.`,
+            code: "USAGE_LIMIT_EXCEEDED",
+            count,
+            plan,
+          },
+          { status: 429 }
+        );
+      }
+      userId = user.id;
+    }
+  } catch {
+    // 인증 서버 오류 시 그냥 통과 (비로그인 허용)
   }
 
   const body = await req.json();
@@ -89,6 +115,14 @@ export async function POST(req: Request) {
         }
         controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
         controller.close();
+
+        // 사용량 증가 (비동기, 실패해도 무시)
+        if (userId) {
+          const month = new Date().toISOString().slice(0, 7);
+          void createSupabaseServiceClient()
+            .rpc("increment_usage", { p_user_id: userId, p_month: month })
+            .then(() => {});
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "스트리밍 오류";
         console.error("Streaming error:", err);
