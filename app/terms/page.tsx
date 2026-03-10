@@ -11,7 +11,7 @@ export default function TermsPage() {
         <div className="space-y-8 text-sm text-gray-700 leading-relaxed">
           <section>
             <h2 className="font-bold text-gray-900 mb-2">제1조 (목적)</h2>
-            <p>이 약관은 집계산(이하 "회사")이 운영하는 Snapcast 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+            <p>이 약관은 집계산(이하 &ldquo;회사&rdquo;)이 운영하는 Snapcast 서비스(이하 &ldquo;서비스&rdquo;)의 이용과 관련하여 회사와 이용자 간의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p>
           </section>
 
           <section>
