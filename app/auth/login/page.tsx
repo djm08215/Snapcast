@@ -37,12 +37,6 @@ export default function LoginPage() {
     });
   };
 
-  const handleKakaoLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4">
@@ -70,28 +64,6 @@ export default function LoginPage() {
             Google로 계속
           </button>
 
-          {/* Naver */}
-          <a
-            href="/api/auth/naver"
-            className="w-full flex items-center justify-center gap-3 text-white py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "#03C75A" }}
-          >
-            <span className="font-extrabold text-base leading-none">N</span>
-            네이버로 계속
-          </a>
-
-          {/* Kakao */}
-          <button
-            type="button"
-            onClick={handleKakaoLogin}
-            className="w-full flex items-center justify-center gap-3 text-gray-900 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "#FEE500" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fillRule="evenodd" clipRule="evenodd" d="M9 1.5C4.858 1.5 1.5 4.134 1.5 7.38c0 2.094 1.305 3.933 3.276 5.01l-.834 3.107a.281.281 0 00.43.305L7.9 13.548A8.87 8.87 0 009 13.26c4.142 0 7.5-2.634 7.5-5.88C16.5 4.134 13.142 1.5 9 1.5z" fill="#3C1E1E"/>
-            </svg>
-            카카오로 계속
-          </button>
         </div>
 
         {/* Divider */}
