@@ -11,8 +11,22 @@ interface Props {
 // Inner component (loaded only client-side)
 function PdfButtonInner({ result, videoUrl }: Props) {
   const handleClick = async () => {
-    const { downloadPdf } = await import("@/lib/pdf");
-    await downloadPdf(result, videoUrl);
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ result, videoUrl }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const title = result.videoTitle?.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-") || "podcast-summary";
+    a.download = `${title}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
