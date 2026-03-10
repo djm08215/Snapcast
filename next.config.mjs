@@ -21,10 +21,6 @@ const nextConfig = {
     if (isServer) {
       config.externals = [...(config.externals || []), "canvas", "jsdom"];
     }
-    config.module.rules.push({
-      test: /\.(ttf|otf)$/,
-      type: "asset/inline",
-    });
     return config;
   },
 };

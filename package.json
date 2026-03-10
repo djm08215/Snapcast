@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "next build",
+    "vercel-build": "node scripts/gen-font-data.mjs && next build",
     "build:toss": "cross-env TOSS_BUILD=1 NEXT_PUBLIC_API_BASE=https://snapcast-gilt.vercel.app next build"
   },
   "dependencies": {
