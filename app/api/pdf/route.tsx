@@ -1,15 +1,27 @@
 import { renderToBuffer, Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
+import * as fontkit from "fontkit";
 import React from "react";
 import type { SummaryResult } from "@/lib/types";
-import { nanumGothicRegular, nanumGothicBold } from "@/lib/fontData";
+import { nanumGothicRegular } from "@/lib/fontData";
 
-Font.register({
-  family: "NanumGothic",
-  fonts: [
-    { src: nanumGothicRegular, fontWeight: "normal" },
-    { src: nanumGothicBold, fontWeight: "bold" },
-  ],
-});
+Font.register({ family: "NanumGothic", src: nanumGothicRegular });
+
+// Patch FontSource._load to use webpack-bundled CJS fontkit (avoids broken ESM fontkit in @react-pdf/font)
+const family = (Font.getRegisteredFonts() as any)["NanumGothic"];
+if (family?.sources?.[0]) {
+  const FontSourceProto = Object.getPrototypeOf(family.sources[0]);
+  const originalLoad = FontSourceProto._load;
+  FontSourceProto._load = async function(this: any) {
+    const src: string = this.src;
+    if (src?.startsWith("data:") && src.includes("base64,")) {
+      const raw = src.split(",")[1];
+      const buf = Buffer.from(raw, "base64");
+      this.data = (fontkit as any).create(buf, this.options?.postscriptName);
+      return;
+    }
+    return originalLoad.call(this);
+  };
+}
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontFamily: "NanumGothic", fontSize: 11, color: "#1a1a1a" },
