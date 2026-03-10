@@ -12,6 +12,11 @@ const nextConfig = {
   compiler: {
     emotion: true,
   },
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/pdf": ["./public/fonts/**"],
+    },
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = [...(config.externals || []), "canvas", "jsdom"];
