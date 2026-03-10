@@ -6,24 +6,13 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
   pdf,
 } from "@react-pdf/renderer";
 import type { SummaryResult } from "./types";
 
-const base = typeof window !== "undefined" ? window.location.origin : "";
-Font.register({
-  family: "NanumGothic",
-  fonts: [
-    { src: `${base}/fonts/NanumGothic-Regular.ttf`, fontWeight: "normal" },
-    { src: `${base}/fonts/NanumGothic-Bold.ttf`, fontWeight: "bold" },
-  ],
-});
-
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: "NanumGothic",
     fontSize: 11,
     color: "#1a1a1a",
   },
@@ -35,7 +24,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontFamily: "NanumGothic",
     fontWeight: "bold",
     color: "#1e40af",
     marginBottom: 4,
@@ -46,7 +34,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: "NanumGothic",
     fontWeight: "bold",
     color: "#1e40af",
     marginTop: 20,
