@@ -15,19 +15,14 @@ let fontsRegistered = false;
 
 async function ensureFonts() {
   if (fontsRegistered) return;
-  const toDataUri = async (path: string) => {
+  const toBlobUrl = async (path: string) => {
     const res = await fetch(path);
-    const buf = await res.arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    let str = "";
-    for (let i = 0; i < bytes.length; i++) {
-      str += String.fromCharCode(bytes[i]);
-    }
-    return `data:font/truetype;base64,${btoa(str)}`;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
   };
   const [regular, bold] = await Promise.all([
-    toDataUri("/fonts/NanumGothic-Regular.ttf"),
-    toDataUri("/fonts/NanumGothic-Bold.ttf"),
+    toBlobUrl("/fonts/NanumGothic-Regular.ttf"),
+    toBlobUrl("/fonts/NanumGothic-Bold.ttf"),
   ]);
   Font.register({
     family: "NanumGothic",
