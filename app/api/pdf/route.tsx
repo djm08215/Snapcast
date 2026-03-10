@@ -1,8 +1,8 @@
 import { renderToBuffer, Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
 import React from "react";
 import type { SummaryResult } from "@/lib/types";
-import NanumGothicRegular from "../../public/fonts/NanumGothic-Regular.ttf";
-import NanumGothicBold from "../../public/fonts/NanumGothic-Bold.ttf";
+import NanumGothicRegular from "../../../public/fonts/NanumGothic-Regular.ttf";
+import NanumGothicBold from "../../../public/fonts/NanumGothic-Bold.ttf";
 
 Font.register({
   family: "NanumGothic",
