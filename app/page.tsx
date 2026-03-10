@@ -23,7 +23,7 @@ export default function Home() {
         {/* Hero */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            유튜브 영상을 AI로 요약해드립니다
+            배울 시간은 없고, 알아야 할 건 많을 때
           </h1>
           <p className="text-gray-500 text-base">
             팟캐스트, 강의, 인터뷰 등 정보성 영상의 핵심을 타임라인으로 정리해드립니다.
