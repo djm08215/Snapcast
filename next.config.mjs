@@ -24,7 +24,7 @@ const nextConfig = {
     if (isServer) {
       config.externals = [...(config.externals || []), "canvas", "jsdom"];
       // Force fontkit CJS build which registers formats (ESM build doesn't)
-      config.resolve.alias["fontkit"] = require.resolve("fontkit/dist/main.cjs");
+      config.resolve.alias["fontkit"] = require.resolve("fontkit");
     }
     return config;
   },
