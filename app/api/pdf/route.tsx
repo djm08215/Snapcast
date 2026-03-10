@@ -1,19 +1,14 @@
 import { renderToBuffer, Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
 import React from "react";
-import { readFileSync } from "fs";
-import path from "path";
 import type { SummaryResult } from "@/lib/types";
-
-function fontToDataUri(filePath: string): string {
-  const data = readFileSync(filePath);
-  return `data:font/truetype;base64,${data.toString("base64")}`;
-}
+import NanumGothicRegular from "../../public/fonts/NanumGothic-Regular.ttf";
+import NanumGothicBold from "../../public/fonts/NanumGothic-Bold.ttf";
 
 Font.register({
   family: "NanumGothic",
   fonts: [
-    { src: fontToDataUri(path.join(process.cwd(), "public/fonts/NanumGothic-Regular.ttf")), fontWeight: "normal" },
-    { src: fontToDataUri(path.join(process.cwd(), "public/fonts/NanumGothic-Bold.ttf")), fontWeight: "bold" },
+    { src: NanumGothicRegular, fontWeight: "normal" },
+    { src: NanumGothicBold, fontWeight: "bold" },
   ],
 });
 
