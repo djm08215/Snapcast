@@ -20,8 +20,8 @@ async function ensureFonts() {
     const buf = await res.arrayBuffer();
     const bytes = new Uint8Array(buf);
     let str = "";
-    for (let i = 0; i < bytes.length; i += 8192) {
-      str += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    for (let i = 0; i < bytes.length; i++) {
+      str += String.fromCharCode(bytes[i]);
     }
     return `data:font/truetype;base64,${btoa(str)}`;
   };
