@@ -6,13 +6,43 @@ import {
   Text,
   View,
   StyleSheet,
+  Font,
   pdf,
 } from "@react-pdf/renderer";
 import type { SummaryResult } from "./types";
 
+let fontsRegistered = false;
+
+async function ensureFonts() {
+  if (fontsRegistered) return;
+  const toDataUri = async (path: string) => {
+    const res = await fetch(path);
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let str = "";
+    for (let i = 0; i < bytes.length; i += 8192) {
+      str += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    }
+    return `data:font/truetype;base64,${btoa(str)}`;
+  };
+  const [regular, bold] = await Promise.all([
+    toDataUri("/fonts/NanumGothic-Regular.ttf"),
+    toDataUri("/fonts/NanumGothic-Bold.ttf"),
+  ]);
+  Font.register({
+    family: "NanumGothic",
+    fonts: [
+      { src: regular, fontWeight: "normal" },
+      { src: bold, fontWeight: "bold" },
+    ],
+  });
+  fontsRegistered = true;
+}
+
 const styles = StyleSheet.create({
   page: {
     padding: 40,
+    fontFamily: "NanumGothic",
     fontSize: 11,
     color: "#1a1a1a",
   },
@@ -134,6 +164,7 @@ function PdfDocument({ result, videoUrl }: PdfDocumentProps) {
 }
 
 export async function downloadPdf(result: SummaryResult, videoUrl: string) {
+  await ensureFonts();
   const blob = await pdf(
     <PdfDocument result={result} videoUrl={videoUrl} />
   ).toBlob();
