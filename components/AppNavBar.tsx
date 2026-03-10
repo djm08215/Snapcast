@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface AppNavBarProps {
   showReset?: boolean;
@@ -51,11 +52,11 @@ export function AppNavBar({ showReset, onReset }: AppNavBarProps) {
       padding: "0 16px",
     }}>
       {/* 로고 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/snapcast.png" alt="" style={{ width: 24, height: 24, borderRadius: 6, objectFit: "contain" }} />
         <span style={{ fontWeight: 700, fontSize: 17, color: "#111" }}>Snapcast</span>
-      </div>
+      </Link>
 
       {/* 우측 버튼들 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

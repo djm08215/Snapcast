@@ -154,6 +154,8 @@ export async function downloadPdf(result: SummaryResult, videoUrl: string) {
   a.href = url;
   const title = result.videoTitle?.slice(0, 30).replace(/[/\\?%*:|"<>]/g, "-") || "podcast-summary";
   a.download = `${title}.pdf`;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
