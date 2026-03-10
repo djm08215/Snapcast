@@ -4,7 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Footer } from "@/components/Footer";
 
-export const dynamic = "force-dynamic";
+// force-dynamic prevents Supabase from failing at Vercel build time; not needed for Toss static export
+export const dynamic = process.env.TOSS_BUILD === "1" ? "auto" : "force-dynamic";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
