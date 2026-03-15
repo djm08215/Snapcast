@@ -83,11 +83,11 @@ export default function Home() {
                   원본 영상 보기 →
                 </a>
               </div>
-              <div className="flex items-center gap-2 flex-wrap justify-end">
-                <TtsButton result={state.result} />
-                <PdfDownloadButton result={state.result} videoUrl={state.url} />
-              </div>
+              <PdfDownloadButton result={state.result} videoUrl={state.url} />
             </div>
+
+            {/* TTS Player */}
+            <TtsButton result={state.result} />
 
             {/* Overall Summary */}
             <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
