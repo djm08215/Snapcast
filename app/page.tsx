@@ -5,6 +5,7 @@ import { UrlForm } from "@/components/UrlForm";
 import { LoadingState } from "@/components/LoadingState";
 import { Timeline } from "@/components/Timeline";
 import { PdfDownloadButton } from "@/components/PdfDownloadButton";
+import { TtsButton } from "@/components/TtsButton";
 import { History } from "@/components/History";
 import { AppNavBar } from "@/components/AppNavBar";
 
@@ -82,7 +83,10 @@ export default function Home() {
                   원본 영상 보기 →
                 </a>
               </div>
-              <PdfDownloadButton result={state.result} videoUrl={state.url} />
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                <TtsButton result={state.result} />
+                <PdfDownloadButton result={state.result} videoUrl={state.url} />
+              </div>
             </div>
 
             {/* Overall Summary */}
