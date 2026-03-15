@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { useTTS, TtsRate } from "@/hooks/useTTS";
+import { useTTS, guessGender, TtsRate } from "@/hooks/useTTS";
 import { SummaryResult } from "@/lib/types";
 
 function buildSections(result: SummaryResult): string[] {
@@ -34,7 +34,7 @@ const RATE_LABELS: Record<TtsRate, string> = {
 
 export function TtsButton({ result }: { result: SummaryResult }) {
   const { plan, user } = useAuth();
-  const { status, rate, currentSection, speak, jumpTo, prev, next, pause, resume, stop, setRate } =
+  const { status, rate, currentSection, voices, selectedVoice, speak, jumpTo, prev, next, pause, resume, stop, setRate, setVoice } =
     useTTS();
 
   if (status === "unsupported") return null;
@@ -63,18 +63,42 @@ export function TtsButton({ result }: { result: SummaryResult }) {
 
   return (
     <div className="w-full">
-      {/* Idle: simple start button */}
+      {/* Idle: start button + voice selector */}
       {status === "idle" && (
-        <button
-          onClick={() => speak(sections, 0)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M15.536 8.464a5 5 0 010 7.072M12 6v12M6.343 9.657a8 8 0 000 4.686" />
-          </svg>
-          듣기
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => speak(sections, 0)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M15.536 8.464a5 5 0 010 7.072M12 6v12M6.343 9.657a8 8 0 000 4.686" />
+            </svg>
+            듣기
+          </button>
+          {voices.length > 1 && (
+            <div className="flex items-center gap-1">
+              {voices.map((v) => {
+                const gender = guessGender(v);
+                const isSelected = selectedVoice?.name === v.name;
+                return (
+                  <button
+                    key={v.name}
+                    onClick={() => setVoice(v)}
+                    title={v.name}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      isSelected
+                        ? "bg-indigo-600 text-white"
+                        : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                    }`}
+                  >
+                    {gender === "male" ? "👨 남성" : "👩 여성"}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Active: full player panel */}
@@ -141,21 +165,47 @@ export function TtsButton({ result }: { result: SummaryResult }) {
               </button>
             </div>
 
-            {/* Speed buttons */}
-            <div className="flex items-center gap-1">
-              {RATES.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRate(r)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    rate === r
-                      ? "bg-indigo-600 text-white"
-                      : "text-indigo-600 hover:bg-indigo-100"
-                  }`}
-                >
-                  {RATE_LABELS[r]}
-                </button>
-              ))}
+            {/* Speed + Voice buttons */}
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {/* Voice */}
+              {voices.length > 1 && (
+                <div className="flex items-center gap-1">
+                  {voices.map((v) => {
+                    const gender = guessGender(v);
+                    const isSelected = selectedVoice?.name === v.name;
+                    return (
+                      <button
+                        key={v.name}
+                        onClick={() => setVoice(v)}
+                        title={v.name}
+                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                          isSelected
+                            ? "bg-indigo-600 text-white"
+                            : "text-indigo-600 hover:bg-indigo-100"
+                        }`}
+                      >
+                        {gender === "male" ? "👨" : "👩"}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Speed */}
+              <div className="flex items-center gap-1">
+                {RATES.map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRate(r)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      rate === r
+                        ? "bg-indigo-600 text-white"
+                        : "text-indigo-600 hover:bg-indigo-100"
+                    }`}
+                  >
+                    {RATE_LABELS[r]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

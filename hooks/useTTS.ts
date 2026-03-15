@@ -5,22 +5,50 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type TtsStatus = "idle" | "playing" | "paused" | "unsupported";
 export type TtsRate = 0.75 | 1.0 | 1.25 | 1.5 | 2.0;
 
+// Heuristic: known male Korean voice name fragments
+const MALE_NAME_HINTS = ["injoon", "인준", "male", "남성", "man", "seoyoon", "서윤"];
+
+export function guessGender(voice: SpeechSynthesisVoice): "male" | "female" | "unknown" {
+  const lower = voice.name.toLowerCase();
+  if (MALE_NAME_HINTS.some((h) => lower.includes(h))) return "male";
+  return "female"; // most Korean voices default to female
+}
+
 export function useTTS() {
   const [status, setStatus] = useState<TtsStatus>("idle");
   const [rate, setRateState] = useState<TtsRate>(1.0);
   const [currentSection, setCurrentSection] = useState(0);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoiceState] = useState<SpeechSynthesisVoice | null>(null);
 
   const sectionsRef = useRef<string[]>([]);
   const currentSectionRef = useRef(0);
   const rateRef = useRef<TtsRate>(1.0);
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const cancelledRef = useRef(false);
 
+  // Load Korean voices
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.speechSynthesis) {
-      setStatus("unsupported");
-    }
+    if (typeof window === "undefined") return;
+    if (!window.speechSynthesis) { setStatus("unsupported"); return; }
+
+    const load = () => {
+      const all = window.speechSynthesis.getVoices();
+      const korean = all.filter((v) => v.lang.startsWith("ko"));
+      if (korean.length > 0) {
+        setVoices(korean);
+        // keep current selection valid, or default to first
+        setSelectedVoiceState((prev) => prev ?? korean[0]);
+        voiceRef.current = voiceRef.current ?? korean[0];
+      }
+    };
+
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+
     return () => {
-      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+      window.speechSynthesis.onvoiceschanged = null;
+      window.speechSynthesis?.cancel();
     };
   }, []);
 
@@ -40,16 +68,13 @@ export function useTTS() {
     const utterance = new SpeechSynthesisUtterance(sectionsRef.current[index]);
     utterance.lang = "ko-KR";
     utterance.rate = rateRef.current;
+    if (voiceRef.current) utterance.voice = voiceRef.current;
 
     utterance.onstart = () => setStatus("playing");
     utterance.onpause = () => setStatus("paused");
     utterance.onresume = () => setStatus("playing");
-    utterance.onerror = () => {
-      if (!cancelledRef.current) setStatus("idle");
-    };
-    utterance.onend = () => {
-      if (!cancelledRef.current) speakSection(index + 1);
-    };
+    utterance.onerror = () => { if (!cancelledRef.current) setStatus("idle"); };
+    utterance.onend = () => { if (!cancelledRef.current) speakSection(index + 1); };
 
     window.speechSynthesis.speak(utterance);
   }, []);
@@ -70,8 +95,7 @@ export function useTTS() {
   }, [speakSection]);
 
   const prev = useCallback(() => {
-    const target = Math.max(0, currentSectionRef.current - 1);
-    jumpTo(target);
+    jumpTo(Math.max(0, currentSectionRef.current - 1));
   }, [jumpTo]);
 
   const next = useCallback(() => {
@@ -79,13 +103,8 @@ export function useTTS() {
     if (target < sectionsRef.current.length) jumpTo(target);
   }, [jumpTo]);
 
-  const pause = useCallback(() => {
-    window.speechSynthesis?.pause();
-  }, []);
-
-  const resume = useCallback(() => {
-    window.speechSynthesis?.resume();
-  }, []);
+  const pause = useCallback(() => { window.speechSynthesis?.pause(); }, []);
+  const resume = useCallback(() => { window.speechSynthesis?.resume(); }, []);
 
   const stop = useCallback(() => {
     cancelledRef.current = true;
@@ -98,7 +117,20 @@ export function useTTS() {
   const setRate = useCallback((newRate: TtsRate) => {
     rateRef.current = newRate;
     setRateState(newRate);
-    // restart current section with new rate if active
+    if (
+      typeof window !== "undefined" &&
+      window.speechSynthesis &&
+      (window.speechSynthesis.speaking || window.speechSynthesis.paused)
+    ) {
+      cancelledRef.current = true;
+      window.speechSynthesis.cancel();
+      setTimeout(() => speakSection(currentSectionRef.current), 50);
+    }
+  }, [speakSection]);
+
+  const setVoice = useCallback((voice: SpeechSynthesisVoice) => {
+    voiceRef.current = voice;
+    setSelectedVoiceState(voice);
     if (
       typeof window !== "undefined" &&
       window.speechSynthesis &&
@@ -114,7 +146,8 @@ export function useTTS() {
     status,
     rate,
     currentSection,
-    totalSections: sectionsRef.current.length,
+    voices,
+    selectedVoice,
     speak,
     jumpTo,
     prev,
@@ -123,5 +156,6 @@ export function useTTS() {
     resume,
     stop,
     setRate,
+    setVoice,
   };
 }
